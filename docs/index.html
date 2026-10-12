@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCTV Storage Planner</title>
+<style>
+  :root { --bg:#f7f8fa; --card:#fff; --ink:#1b2430; --muted:#5b6675; --line:#d9dee6; --accent:#0b6bcb; --ok:#127a3d; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#10151c; --card:#18202a; --ink:#e8edf3; --muted:#9aa7b6; --line:#2a3644; --accent:#58a6ff; --ok:#4cc38a; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:20px 16px 48px; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:1.4rem; margin:.2em 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin:16px 0; }
+  .row { display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:10px; align-items:end; padding:10px 0; border-bottom:1px dashed var(--line); }
+  .row:last-child { border-bottom:0; }
+  label { display:flex; flex-direction:column; font-size:.82rem; color:var(--muted); gap:4px; }
+  input, select, button { font:inherit; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); min-height:40px; }
+  button { cursor:pointer; background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.secondary { background:transparent; color:var(--accent); }
+  .globals { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; }
+  .big { font-size:1.6rem; font-weight:700; color:var(--ok); }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:12px; }
+  .stat small { display:block; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  th, td { padding:6px 4px; text-align:start; border-bottom:1px solid var(--line); }
+  .stat b, .big, td + td { direction:ltr; unicode-bidi:isolate; display:inline-block; }
+  .err { color:#c62828; font-weight:600; }
+  .note { color:var(--muted); font-size:.85rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="t-title">CCTV Storage Planner</h1>
+    <button class="secondary" id="lang" type="button">العربية</button>
+  </header>
+  <p class="note" id="t-intro">Estimate disks, retention and network load for a camera system. Planning figures only: measure your real bitrates before buying.</p>
+
+  <section class="card" aria-labelledby="t-cams">
+    <h2 id="t-cams" style="font-size:1.05rem;margin-top:0">Cameras</h2>
+    <div id="groups"></div>
+    <button class="secondary" id="add" type="button">+ Add camera group</button>
+  </section>
+
+  <section class="card" aria-labelledby="t-set">
+    <h2 id="t-set" style="font-size:1.05rem;margin-top:0">Storage</h2>
+    <div class="globals">
+      <label><span id="l-days">Retention (days)</span><input id="days" type="number" min="1" value="30"></label>
+      <label><span id="l-disk">Disk size (TB)</span><input id="disk" type="number" min="0.5" step="0.5" value="8"></label>
+      <label><span id="l-raid">RAID</span>
+        <select id="raid"><option value="raid5">RAID 5</option><option value="raid6">RAID 6</option><option value="raid10">RAID 10</option><option value="raid1">RAID 1</option><option value="raid0">RAID 0</option><option value="none">No RAID</option></select></label>
+      <label><span id="l-res">Free-space reserve (%)</span><input id="reserve" type="number" min="0" max="50" value="10"></label>
+    </div>
+  </section>
+
+  <section class="card" aria-live="polite">
+    <div id="out"></div>
+  </section>
+  <p class="note" id="t-foot">Defaults assume H.264 at 25 fps, medium quality; H.265 is modelled at half the bitrate. Capacity uses decimal TB. Not a vendor guarantee.</p>
+</main>
+<script src="planner.js"></script>
+<script>
+(function () {
+  var T = {
+    en: { dir:"ltr", lang:"العربية", title:"CCTV Storage Planner", intro:"Estimate disks, retention and network load for a camera system. Planning figures only: measure your real bitrates before buying.",
+      cams:"Cameras", set:"Storage", add:"+ Add camera group", remove:"Remove", count:"Count", res:"Resolution", measured:"Measured (kbps)", codec:"Codec", fps:"FPS", hours:"Hours/day", act:"Recording activity %", audio:"Audio",
+      days:"Retention (days)", disk:"Disk size (TB)", raid:"RAID", reserve:"Free-space reserve (%)",
+      disksNeeded:"Disks needed", raw:"Raw capacity", usable:"Usable after RAID", holds:"Holds (days)", perDay:"Writes per day", net:"Network load", need:"Usable TB required",
+      unit:"disks", gbd:"GB/day", mbps:"Mbps (with 25% headroom)", group:"Group", each:"kbps each", foot:"Defaults assume H.264 at 25 fps, medium quality; H.265 is modelled at half the bitrate. Capacity uses decimal TB. Not a vendor guarantee." },
+    ar: { dir:"rtl", lang:"English", title:"حاسبة تخزين الكاميرات", intro:"تقدير عدد الهارد ومدة الاحتفاظ وحِمل الشبكة لنظام كاميرات. أرقام تخطيطية فقط: قِس معدلات البت الحقيقية قبل الشراء.",
+      cams:"الكاميرات", set:"التخزين", add:"+ إضافة مجموعة كاميرات", remove:"حذف", count:"العدد", res:"الدقة", measured:"مقيس (kbps)", codec:"الترميز", fps:"إطار/ث", hours:"ساعات/يوم", act:"نسبة النشاط %", audio:"صوت",
+      days:"مدة الاحتفاظ (يوم)", disk:"حجم الهارد (TB)", raid:"RAID", reserve:"احتياطي مساحة (%)",
+      disksNeeded:"عدد الهاردات", raw:"السعة الخام", usable:"المتاح بعد RAID", holds:"تكفي (يوم)", perDay:"الكتابة يوميا", net:"حِمل الشبكة", need:"السعة المطلوبة (TB)",
+      unit:"هارد", gbd:"GB/يوم", mbps:"Mbps، مع هامش 25 بالمئة", group:"مجموعة", each:"kbps للكاميرا", foot:"الافتراضات: H.264 بمعدل 25 إطار/ث وجودة متوسطة، وH.265 بنصف المعدل. السعة بالـ TB العشري. ليست ضمانا من المورّد." }
+  };
+  var lang = "en", $ = function (id) { return document.getElementById(id); };
+  var groups = [{ count: 16, resolution: "4mp", codec: "h265", fps: 15, hours: 24, activity: 100, audio: false, measured: "" }];
+
+  function t(k) { return T[lang][k]; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]; }); }
+
+  function renderGroups() {
+    var html = groups.map(function (g, i) {
+      var opts = Object.keys(CctvPlanner.RES_KBPS).map(function (r) { return '<option value="' + r + '"' + (g.resolution === r ? " selected" : "") + ">" + r.toUpperCase() + "</option>"; }).join("");
+      var codecs = ["h264", "h265", "h265plus"].map(function (c) { return '<option value="' + c + '"' + (g.codec === c ? " selected" : "") + ">" + (c === "h265plus" ? "H.265+" : c.toUpperCase().replace("H", "H.")) + "</option>"; }).join("");
+      return '<div class="row" data-i="' + i + '">' +
+        '<label>' + t("count") + '<input data-k="count" type="number" min="1" value="' + g.count + '"></label>' +
+        '<label>' + t("res") + '<select data-k="resolution">' + opts + '</select></label>' +
+        '<label>' + t("measured") + '<input data-k="measured" type="number" min="0" placeholder="—" value="' + esc(g.measured) + '"></label>' +
+        '<label>' + t("codec") + '<select data-k="codec">' + codecs + '</select></label>' +
+        '<label>' + t("fps") + '<input data-k="fps" type="number" min="1" max="60" value="' + g.fps + '"></label>' +
+        '<label>' + t("hours") + '<input data-k="hours" type="number" min="1" max="24" step="0.5" value="' + g.hours + '"></label>' +
+        '<label>' + t("act") + '<input data-k="activity" type="number" min="0" max="100" value="' + g.activity + '"></label>' +
+        '<label><span>' + t("audio") + '</span><input data-k="audio" type="checkbox"' + (g.audio ? " checked" : "") + '></label>' +
+        (groups.length > 1 ? '<button class="secondary" data-rm="' + i + '" type="button">' + t("remove") + '</button>' : "") + '</div>';
+    }).join("");
+    $("groups").innerHTML = html;
+  }
+
+  function compute() {
+    var out = $("out");
+    try {
+      var gs = groups.map(function (g) {
+        return { count: Number(g.count), resolution: g.measured !== "" && Number(g.measured) > 0 ? g.measured + "k" : g.resolution,
+                 codec: g.codec, fps: Number(g.fps), hours: Number(g.hours), activity: Number(g.activity) / 100, audio: !!g.audio };
+      });
+      var r = CctvPlanner.plan(gs, Number($("days").value), Number($("disk").value), $("raid").value, Number($("reserve").value) / 100);
+      var rows = r.groups.map(function (g, i) { return "<tr><td>" + t("group") + " " + (i + 1) + " (" + g.count + " × " + esc(g.resolution) + ")</td><td>" + g.kbps + " " + t("each") + "</td><td>" + g.gb_per_day + " " + t("gbd") + "</td></tr>"; }).join("");
+      out.innerHTML = '<div class="grid">' +
+        '<div class="stat"><small>' + t("disksNeeded") + '</small><span class="big">' + r.disks + " × " + Number($("disk").value) + " TB</span></div>" +
+        '<div class="stat"><small>' + t("raw") + '</small><b>' + r.raw_tb + " TB</b></div>" +
+        '<div class="stat"><small>' + t("usable") + '</small><b>' + r.usable_tb_after_raid + " TB</b></div>" +
+        '<div class="stat"><small>' + t("holds") + '</small><b>' + (r.retention_days_achieved === null ? "∞" : r.retention_days_achieved) + "</b></div>" +
+        '<div class="stat"><small>' + t("perDay") + '</small><b>' + r.gb_per_day + " " + t("gbd") + "</b></div>" +
+        '<div class="stat"><small>' + t("net") + '</small><b>' + r.network_mbps_with_headroom + " " + t("mbps") + "</b></div></div>" +
+        '<table style="margin-top:12px">' + rows + "</table>";
+    } catch (e) {
+      out.innerHTML = '<p class="err" role="alert">' + esc(e.message) + "</p>";
+    }
+  }
+
+  function applyLang() {
+    var L = T[lang];
+    document.documentElement.lang = lang; document.documentElement.dir = L.dir;
+    $("lang").textContent = L.lang; $("t-title").textContent = L.title; $("t-intro").textContent = L.intro;
+    $("t-cams").textContent = L.cams; $("t-set").textContent = L.set; $("add").textContent = L.add;
+    $("l-days").textContent = L.days; $("l-disk").textContent = L.disk; $("l-raid").textContent = L.raid; $("l-res").textContent = L.reserve;
+    $("t-foot").textContent = L.foot; document.title = L.title;
+    renderGroups(); compute();
+  }
+
+  $("groups").addEventListener("input", function (ev) {
+    var row = ev.target.closest(".row"); if (!row) return;
+    var g = groups[Number(row.dataset.i)], k = ev.target.dataset.k;
+    g[k] = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
+    compute();
+  });
+  $("groups").addEventListener("click", function (ev) {
+    if (ev.target.dataset.rm === undefined) return;
+    groups.splice(Number(ev.target.dataset.rm), 1); renderGroups(); compute();
+  });
+  $("add").addEventListener("click", function () { groups.push({ count: 4, resolution: "2mp", codec: "h265", fps: 15, hours: 24, activity: 100, audio: false, measured: "" }); renderGroups(); compute(); });
+  ["days", "disk", "raid", "reserve"].forEach(function (id) { $(id).addEventListener("input", compute); });
+  $("lang").addEventListener("click", function () { lang = lang === "en" ? "ar" : "en"; applyLang(); });
+  applyLang();
+})();
+</script>
+</body>
+</html>

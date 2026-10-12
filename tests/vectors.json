@@ -1,0 +1,381 @@
+[
+ {
+  "input": {
+   "name": "single 2mp h264 raid5",
+   "groups": [
+    {
+     "count": 1,
+     "resolution": "2mp"
+    }
+   ],
+   "days": 30,
+   "disk_tb": 4,
+   "raid": "raid5"
+  },
+  "expected": {
+   "cameras": 1,
+   "groups": [
+    {
+     "count": 1,
+     "resolution": "2mp",
+     "kbps": 4096.0,
+     "gb_per_camera_day": 44.24,
+     "gb_per_day": 44.24
+    }
+   ],
+   "total_bitrate_mbps": 4.1,
+   "network_mbps_with_headroom": 5.12,
+   "gb_per_day": 44.24,
+   "required_usable_tb": 1.47,
+   "disks": 3,
+   "raid": "raid5",
+   "raw_tb": 12,
+   "usable_tb_after_raid": 8.0,
+   "retention_days_achieved": 162
+  }
+ },
+ {
+  "input": {
+   "name": "mixed fleet h265",
+   "groups": [
+    {
+     "count": 16,
+     "resolution": "4mp",
+     "codec": "h265",
+     "fps": 15
+    },
+    {
+     "count": 4,
+     "resolution": "8mp",
+     "codec": "h265",
+     "fps": 12
+    }
+   ],
+   "days": 30,
+   "disk_tb": 8,
+   "raid": "raid5"
+  },
+  "expected": {
+   "cameras": 20,
+   "groups": [
+    {
+     "count": 16,
+     "resolution": "4mp",
+     "kbps": 1843.2,
+     "gb_per_camera_day": 19.91,
+     "gb_per_day": 318.5
+    },
+    {
+     "count": 4,
+     "resolution": "8mp",
+     "kbps": 2949.1,
+     "gb_per_camera_day": 31.85,
+     "gb_per_day": 127.4
+    }
+   ],
+   "total_bitrate_mbps": 41.29,
+   "network_mbps_with_headroom": 51.61,
+   "gb_per_day": 445.91,
+   "required_usable_tb": 14.86,
+   "disks": 3,
+   "raid": "raid5",
+   "raw_tb": 24,
+   "usable_tb_after_raid": 16.0,
+   "retention_days_achieved": 32
+  }
+ },
+ {
+  "input": {
+   "name": "raid6 with audio",
+   "groups": [
+    {
+     "count": 8,
+     "resolution": "5mp",
+     "codec": "h265plus",
+     "fps": 20,
+     "audio": true
+    }
+   ],
+   "days": 45,
+   "disk_tb": 6,
+   "raid": "raid6"
+  },
+  "expected": {
+   "cameras": 8,
+   "groups": [
+    {
+     "count": 8,
+     "resolution": "5mp",
+     "kbps": 2357.8,
+     "gb_per_camera_day": 25.46,
+     "gb_per_day": 203.71
+    }
+   ],
+   "total_bitrate_mbps": 18.86,
+   "network_mbps_with_headroom": 23.58,
+   "gb_per_day": 203.71,
+   "required_usable_tb": 10.19,
+   "disks": 4,
+   "raid": "raid6",
+   "raw_tb": 24,
+   "usable_tb_after_raid": 12.0,
+   "retention_days_achieved": 53
+  }
+ },
+ {
+  "input": {
+   "name": "raid10 even disks",
+   "groups": [
+    {
+     "count": 10,
+     "resolution": "2mp",
+     "fps": 25
+    }
+   ],
+   "days": 14,
+   "disk_tb": 4,
+   "raid": "raid10"
+  },
+  "expected": {
+   "cameras": 10,
+   "groups": [
+    {
+     "count": 10,
+     "resolution": "2mp",
+     "kbps": 4096.0,
+     "gb_per_camera_day": 44.24,
+     "gb_per_day": 442.37
+    }
+   ],
+   "total_bitrate_mbps": 40.96,
+   "network_mbps_with_headroom": 51.2,
+   "gb_per_day": 442.37,
+   "required_usable_tb": 6.88,
+   "disks": 4,
+   "raid": "raid10",
+   "raw_tb": 16,
+   "usable_tb_after_raid": 8.0,
+   "retention_days_achieved": 16
+  }
+ },
+ {
+  "input": {
+   "name": "raid1 mirrored pair",
+   "groups": [
+    {
+     "count": 2,
+     "resolution": "1mp"
+    }
+   ],
+   "days": 10,
+   "disk_tb": 2,
+   "raid": "raid1"
+  },
+  "expected": {
+   "cameras": 2,
+   "groups": [
+    {
+     "count": 2,
+     "resolution": "1mp",
+     "kbps": 2048.0,
+     "gb_per_camera_day": 22.12,
+     "gb_per_day": 44.24
+    }
+   ],
+   "total_bitrate_mbps": 4.1,
+   "network_mbps_with_headroom": 5.12,
+   "gb_per_day": 44.24,
+   "required_usable_tb": 0.49,
+   "disks": 2,
+   "raid": "raid1",
+   "raw_tb": 4,
+   "usable_tb_after_raid": 2.0,
+   "retention_days_achieved": 40
+  }
+ },
+ {
+  "input": {
+   "name": "no raid motion-only",
+   "groups": [
+    {
+     "count": 20,
+     "resolution": "4mp",
+     "codec": "h265",
+     "hours": 24,
+     "activity": 0.3
+    }
+   ],
+   "days": 60,
+   "disk_tb": 10,
+   "raid": "none"
+  },
+  "expected": {
+   "cameras": 20,
+   "groups": [
+    {
+     "count": 20,
+     "resolution": "4mp",
+     "kbps": 3072.0,
+     "gb_per_camera_day": 9.95,
+     "gb_per_day": 199.07
+    }
+   ],
+   "total_bitrate_mbps": 61.44,
+   "network_mbps_with_headroom": 76.8,
+   "gb_per_day": 199.07,
+   "required_usable_tb": 13.27,
+   "disks": 2,
+   "raid": "none",
+   "raw_tb": 20,
+   "usable_tb_after_raid": 20.0,
+   "retention_days_achieved": 90
+  }
+ },
+ {
+  "input": {
+   "name": "measured bitrate and schedule",
+   "groups": [
+    {
+     "count": 6,
+     "resolution": "3000k",
+     "hours": 12
+    }
+   ],
+   "days": 30,
+   "disk_tb": 8,
+   "raid": "raid5"
+  },
+  "expected": {
+   "cameras": 6,
+   "groups": [
+    {
+     "count": 6,
+     "resolution": "3000k",
+     "kbps": 3000.0,
+     "gb_per_camera_day": 16.2,
+     "gb_per_day": 97.2
+    }
+   ],
+   "total_bitrate_mbps": 18.0,
+   "network_mbps_with_headroom": 22.5,
+   "gb_per_day": 97.2,
+   "required_usable_tb": 3.24,
+   "disks": 3,
+   "raid": "raid5",
+   "raw_tb": 24,
+   "usable_tb_after_raid": 16.0,
+   "retention_days_achieved": 148
+  }
+ },
+ {
+  "input": {
+   "name": "fixed disks report retention",
+   "groups": [
+    {
+     "count": 12,
+     "resolution": "2mp",
+     "codec": "h265",
+     "fps": 15
+    }
+   ],
+   "days": 30,
+   "disk_tb": 8,
+   "raid": "raid5",
+   "disks": 4
+  },
+  "expected": {
+   "cameras": 12,
+   "groups": [
+    {
+     "count": 12,
+     "resolution": "2mp",
+     "kbps": 1228.8,
+     "gb_per_camera_day": 13.27,
+     "gb_per_day": 159.25
+    }
+   ],
+   "total_bitrate_mbps": 14.75,
+   "network_mbps_with_headroom": 18.43,
+   "gb_per_day": 159.25,
+   "required_usable_tb": 5.31,
+   "disks": 4,
+   "raid": "raid5",
+   "raw_tb": 32,
+   "usable_tb_after_raid": 24.0,
+   "retention_days_achieved": 135
+  }
+ },
+ {
+  "input": {
+   "name": "custom reserve",
+   "groups": [
+    {
+     "count": 5,
+     "resolution": "2mp",
+     "codec": "h265"
+    }
+   ],
+   "days": 30,
+   "disk_tb": 4,
+   "raid": "raid5",
+   "reserve": 0.2
+  },
+  "expected": {
+   "cameras": 5,
+   "groups": [
+    {
+     "count": 5,
+     "resolution": "2mp",
+     "kbps": 2048.0,
+     "gb_per_camera_day": 22.12,
+     "gb_per_day": 110.59
+    }
+   ],
+   "total_bitrate_mbps": 10.24,
+   "network_mbps_with_headroom": 12.8,
+   "gb_per_day": 110.59,
+   "required_usable_tb": 4.15,
+   "disks": 3,
+   "raid": "raid5",
+   "raw_tb": 12,
+   "usable_tb_after_raid": 8.0,
+   "retention_days_achieved": 57
+  }
+ },
+ {
+  "input": {
+   "name": "zero activity",
+   "groups": [
+    {
+     "count": 3,
+     "resolution": "2mp",
+     "activity": 0
+    }
+   ],
+   "days": 30,
+   "disk_tb": 4,
+   "raid": "raid5"
+  },
+  "expected": {
+   "cameras": 3,
+   "groups": [
+    {
+     "count": 3,
+     "resolution": "2mp",
+     "kbps": 4096.0,
+     "gb_per_camera_day": 0.0,
+     "gb_per_day": 0.0
+    }
+   ],
+   "total_bitrate_mbps": 12.29,
+   "network_mbps_with_headroom": 15.36,
+   "gb_per_day": 0.0,
+   "required_usable_tb": 0.0,
+   "disks": 3,
+   "raid": "raid5",
+   "raw_tb": 12,
+   "usable_tb_after_raid": 8.0,
+   "retention_days_achieved": null
+  }
+ }
+]
