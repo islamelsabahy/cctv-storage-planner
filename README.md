@@ -50,7 +50,9 @@ from cctvplan import plan
 plan([{"count": 16, "resolution": "4mp", "codec": "h265", "fps": 15}], retention_days=30, disk_tb=8, raid="raid5")
 ```
 
-Web calculator: open `docs/index.html`, or enable GitHub Pages for the `docs/` folder.
+Web calculator: open `docs/index.html`, or enable GitHub Pages for the `docs/` folder. Live copy: https://islamelsabahy.github.io/cctv-storage-planner/
+
+**PDF report / تقرير PDF.** The *Export PDF report* button builds a print-ready report in the language currently selected (English or Arabic): camera groups with per-group GB/day and share, storage settings, the result (disks, raw and usable capacity, retention achieved, bandwidth), and the calculation steps with your actual numbers. Type a project name first if you want it on the report. The button opens the browser's print dialog: choose *Save as PDF*. Nothing is uploaded; the report is built in your browser.
 
 ## How it is calculated / طريقة الحساب
 

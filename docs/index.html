@@ -25,13 +25,32 @@
   .stat small { display:block; color:var(--muted); }
   table { width:100%; border-collapse:collapse; font-size:.9rem; }
   th, td { padding:6px 4px; text-align:start; border-bottom:1px solid var(--line); }
-  .stat b, .big, td + td { direction:ltr; unicode-bidi:isolate; display:inline-block; }
+  .stat b, .big, #out td + td { direction:ltr; unicode-bidi:isolate; display:inline-block; }
   .gh { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; padding-top:8px; font-weight:600; }
   .gh .btns { display:flex; gap:8px; }
   .gh button { padding:4px 10px; min-height:32px; font-size:.85rem; }
   .chk { flex-direction:row; align-items:center; gap:8px; color:var(--ink); font-size:.95rem; min-height:40px; }
   .chk input { min-height:0; width:20px; height:20px; }
   .badge { font-size:.75rem; background:var(--line); border-radius:999px; padding:1px 8px; margin-inline-start:6px; }
+  #report { display:none; }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  @media print {
+    @page { margin: 14mm; }
+    :root { --bg:#fff; --card:#fff; --ink:#111; --muted:#444; --line:#bbb; --accent:#0b4f9c; --ok:#0b4f9c; }
+    body { background:#fff; color:#111; font-size:11pt; }
+    main > *:not(#report) { display:none !important; }
+    main { max-width:none; padding:0; }
+    #report { display:block; }
+    #report h1 { font-size:18pt; margin:0 0 4px; }
+    #report h2 { font-size:12pt; margin:16px 0 6px; border-bottom:1px solid var(--line); padding-bottom:3px; }
+    #report table { font-size:9.5pt; }
+    #report tr { break-inside:avoid; }
+    #report th { background:#eef1f5; }
+    #report .meta { color:#444; margin:0 0 8px; }
+    #report ol { padding-inline-start:20px; margin:6px 0; }
+    #report li { margin:3px 0; }
+    #report .disclaimer { margin-top:14px; font-size:9pt; color:#444; border-top:1px solid var(--line); padding-top:6px; }
+  }
   .err { color:#c62828; font-weight:600; }
   .note { color:var(--muted); font-size:.85rem; }
 </style>
@@ -58,12 +77,15 @@
       <label><span id="l-raid">RAID</span>
         <select id="raid"><option value="raid5">RAID 5</option><option value="raid6">RAID 6</option><option value="raid10">RAID 10</option><option value="raid1">RAID 1</option><option value="raid0">RAID 0</option><option value="none">No RAID</option></select></label>
       <label><span id="l-res">Free-space reserve (%)</span><input id="reserve" type="number" min="0" max="50" value="10"></label>
+      <label style="grid-column:1/-1"><span id="l-proj">Project name (shown on the report)</span><input id="proj" type="text" maxlength="80"></label>
     </div>
   </section>
 
   <section class="card" aria-live="polite">
     <div id="out"></div>
+    <div class="actions"><button id="pdf" type="button">Export PDF report</button><span class="note" id="t-pdfhint">Opens the print dialog: choose "Save as PDF".</span></div>
   </section>
+  <section id="report" aria-hidden="true"></section>
   <p class="note" id="t-foot">Defaults assume H.264 at 25 fps, medium quality; H.265 is modelled at half the bitrate. Capacity uses decimal TB. Not a vendor guarantee.</p>
 </main>
 <script src="planner.js"></script>
@@ -74,12 +96,36 @@
       cams:"Cameras", set:"Storage", add:"+ Add camera group", remove:"Remove", dup:"Duplicate", count:"Count", res:"Resolution", measured:"Measured (kbps)", codec:"Codec", fps:"FPS", hours:"Hours/day", act:"Recording activity %", audio:"With audio",
       days:"Retention (days)", disk:"Disk size (TB)", raid:"RAID", reserve:"Free-space reserve (%)",
       disksNeeded:"Disks needed", raw:"Raw capacity", usable:"Usable after RAID", holds:"Holds (days)", perDay:"Writes per day", net:"Network load", need:"Usable TB required",
-      unit:"disks", gbd:"GB/day", mbps:"Mbps (with 25% headroom)", group:"Group", each:"kbps each", foot:"Defaults assume H.264 at 25 fps, medium quality; H.265 is modelled at half the bitrate. Capacity uses decimal TB. Not a vendor guarantee." },
+      unit:"disks", gbd:"GB/day", mbps:"Mbps (with 25% headroom)", group:"Group", each:"kbps each", foot:"Defaults assume H.264 at 25 fps, medium quality; H.265 is modelled at half the bitrate. Capacity uses decimal TB. Not a vendor guarantee.",
+      pdf:"Export PDF report", pdfhint:'Opens the print dialog: choose "Save as PDF".', proj:"Project name (shown on the report)",
+      rTitle:"CCTV Storage Report", rDate:"Date", rProject:"Project", rCams:"1. Camera groups", rSet:"2. Storage settings", rRes:"3. Result", rCalc:"4. How the result was calculated",
+      cGroup:"Group", cCount:"Cameras", cRes:"Resolution", cCodec:"Codec", cFps:"FPS", cHours:"Hours/day", cAct:"Activity", cAudio:"Audio", cKbps:"kbps each", cGbCam:"GB/day each", cGbGrp:"GB/day group", cShare:"Share",
+      yes:"Yes", no:"No", total:"Total", measuredNote:"measured",
+      sRet:"Retention required", sDisk:"Disk size", sRaid:"RAID level", sReserve:"Free-space reserve",
+      oDisks:"Disks to buy", oRaw:"Raw capacity", oUsable:"Usable after RAID", oHolds:"Retention those disks hold", oPerDay:"Data written per day", oNeed:"Usable capacity required", oNet:"Stream bandwidth (sum)", oNetH:"Network to plan for (+25%)", days:"days",
+      k1:"Each group: stream bitrate = table value for the resolution × codec factor × fps ÷ 25 (+ 64 kbps with audio); a measured bitrate is used as given.",
+      k2:"GB per day = kbps × 1000 ÷ 8 × recorded seconds × activity ÷ 10⁹, summed over all cameras: {perDay} GB/day.",
+      k3:"Space required = {perDay} GB/day × {days} days ÷ (1 − {reserve}% reserve) = {need} TB usable.",
+      k4:"Smallest disk count that holds that after {raid}: {disks} × {disk} TB = {raw} TB raw, {usable} TB after RAID.",
+      k5:"With {disks} disks the system holds about {holds} days at the planned settings.",
+      disclaimer:"Planning estimate generated from default bitrate tables (H.264 at 25 fps, medium quality; H.265 modelled at half the bitrate). Real bitrates depend on the scene and camera settings: measure your cameras and check the recorder's channel and throughput limits before buying." },
     ar: { dir:"rtl", lang:"English", title:"حاسبة تخزين الكاميرات", intro:"تقدير عدد الهارد ومدة الاحتفاظ وحِمل الشبكة لنظام كاميرات. أرقام تخطيطية فقط: قِس معدلات البت الحقيقية قبل الشراء.",
       cams:"الكاميرات", set:"التخزين", add:"+ إضافة مجموعة كاميرات", remove:"حذف", dup:"نسخ", count:"العدد", res:"الدقة", measured:"مقيس (kbps)", codec:"الترميز", fps:"إطار/ث", hours:"ساعات/يوم", act:"نسبة النشاط %", audio:"بصوت",
       days:"مدة الاحتفاظ (يوم)", disk:"حجم الهارد (TB)", raid:"RAID", reserve:"احتياطي مساحة (%)",
       disksNeeded:"عدد الهاردات", raw:"السعة الخام", usable:"المتاح بعد RAID", holds:"تكفي (يوم)", perDay:"الكتابة يوميا", net:"حِمل الشبكة", need:"السعة المطلوبة (TB)",
-      unit:"هارد", gbd:"GB/يوم", mbps:"Mbps، مع هامش 25 بالمئة", group:"مجموعة", each:"kbps للكاميرا", foot:"الافتراضات: H.264 بمعدل 25 إطار/ث وجودة متوسطة، وH.265 بنصف المعدل. السعة بالـ TB العشري. ليست ضمانا من المورّد." }
+      unit:"هارد", gbd:"GB/يوم", mbps:"Mbps، مع هامش 25 بالمئة", group:"مجموعة", each:"kbps للكاميرا", foot:"الافتراضات: H.264 بمعدل 25 إطار/ث وجودة متوسطة، وH.265 بنصف المعدل. السعة بالـ TB العشري. ليست ضمانا من المورّد.",
+      pdf:"تصدير تقرير PDF", pdfhint:'بيفتح نافذة الطباعة: اختار "حفظ كـ PDF".', proj:"اسم المشروع (يظهر في التقرير)",
+      rTitle:"تقرير تخزين الكاميرات", rDate:"التاريخ", rProject:"المشروع", rCams:"١. مجموعات الكاميرات", rSet:"٢. إعدادات التخزين", rRes:"٣. النتيجة", rCalc:"٤. طريقة الحساب",
+      cGroup:"المجموعة", cCount:"عدد الكاميرات", cRes:"الدقة", cCodec:"الترميز", cFps:"إطار/ث", cHours:"ساعات/يوم", cAct:"النشاط", cAudio:"صوت", cKbps:"kbps للكاميرا", cGbCam:"GB/يوم للكاميرا", cGbGrp:"GB/يوم للمجموعة", cShare:"النسبة",
+      yes:"نعم", no:"لا", total:"الإجمالي", measuredNote:"مقيس",
+      sRet:"مدة الاحتفاظ المطلوبة", sDisk:"حجم الهارد", sRaid:"نوع الـ RAID", sReserve:"احتياطي المساحة",
+      oDisks:"عدد الهاردات المطلوب", oRaw:"السعة الخام", oUsable:"المتاح بعد RAID", oHolds:"مدة الاحتفاظ الفعلية", oPerDay:"البيانات المكتوبة يوميا", oNeed:"السعة المطلوبة", oNet:"سرعة البث (المجموع)", oNetH:"الشبكة المطلوبة (+25%)", days:"يوم",
+      k1:"لكل مجموعة: معدل البت = قيمة جدول الدقة × معامل الترميز × إطار/ث ÷ 25 (+ 64 kbps مع الصوت)، والمعدل المقيس يُستخدم كما هو.",
+      k2:"الكتابة اليومية: <bdi dir=\"ltr\">GB/day = kbps × 1000 ÷ 8 × seconds × activity ÷ 10⁹</bdi> مجموعة لكل الكاميرات: {perDay} GB/يوم.",
+      k3:"المساحة المطلوبة: <bdi dir=\"ltr\">{perDay} GB/day × {days} days ÷ (1 − {reserve}%) = {need} TB</bdi> (سعة متاحة).",
+      k4:"أقل عدد هاردات يغطي ذلك بعد {raid}: <bdi dir=\"ltr\">{disks} × {disk} TB</bdi> (السعة الخام {raw} TB، والمتاحة بعد RAID {usable} TB).",
+      k5:"بعدد {disks} هاردات يحتفظ النظام بحوالي {holds} يوم بالإعدادات المخططة.",
+      disclaimer:"تقدير تخطيطي مبني على جداول معدلات بت افتراضية (H.264 بمعدل 25 إطار/ث وجودة متوسطة، وH.265 بنصف المعدل). المعدلات الحقيقية تختلف حسب المشهد وإعدادات الكاميرا: قِس كاميراتك وراجع حدود قنوات وسرعة جهاز التسجيل قبل الشراء." }
   };
   var lang = "en", $ = function (id) { return document.getElementById(id); };
   function mk(count, resolution, audio) { return { count: count, resolution: resolution, codec: "h265", fps: 15, hours: 24, activity: 100, audio: !!audio, measured: "" }; }
@@ -108,14 +154,19 @@
     $("groups").innerHTML = html;
   }
 
+  function calc() {
+    var gs = groups.map(function (g) {
+      return { count: Number(g.count), resolution: g.measured !== "" && Number(g.measured) > 0 ? g.measured + "k" : g.resolution,
+               codec: g.codec, fps: Number(g.fps), hours: Number(g.hours), activity: Number(g.activity) / 100, audio: !!g.audio };
+    });
+    var set = { days: Number($("days").value), disk: Number($("disk").value), raid: $("raid").value, reserve: Number($("reserve").value) };
+    return { gs: gs, set: set, r: CctvPlanner.plan(gs, set.days, set.disk, set.raid, set.reserve / 100) };
+  }
+
   function compute() {
     var out = $("out");
     try {
-      var gs = groups.map(function (g) {
-        return { count: Number(g.count), resolution: g.measured !== "" && Number(g.measured) > 0 ? g.measured + "k" : g.resolution,
-                 codec: g.codec, fps: Number(g.fps), hours: Number(g.hours), activity: Number(g.activity) / 100, audio: !!g.audio };
-      });
-      var r = CctvPlanner.plan(gs, Number($("days").value), Number($("disk").value), $("raid").value, Number($("reserve").value) / 100);
+      var r = calc().r;
       var rows = r.groups.map(function (g, i) { return "<tr><td>" + t("group") + " " + (i + 1) + " (" + g.count + " × " + esc(g.resolution).toUpperCase() + (g.audio ? '<span class="badge">' + t("audio") + "</span>" : "") + ")</td><td>" + g.kbps + " " + t("each") + "</td><td>" + g.gb_per_day + " " + t("gbd") + "</td></tr>"; }).join("");
       out.innerHTML = '<div class="grid">' +
         '<div class="stat"><small>' + t("disksNeeded") + '</small><span class="big">' + r.disks + " × " + Number($("disk").value) + " TB</span></div>" +
@@ -125,9 +176,55 @@
         '<div class="stat"><small>' + t("perDay") + '</small><b>' + r.gb_per_day + " " + t("gbd") + "</b></div>" +
         '<div class="stat"><small>' + t("net") + '</small><b>' + r.network_mbps_with_headroom + " " + t("mbps") + "</b></div></div>" +
         '<table style="margin-top:12px">' + rows + "</table>";
+      $("pdf").disabled = false;
     } catch (e) {
       out.innerHTML = '<p class="err" role="alert">' + esc(e.message) + "</p>";
+      $("pdf").disabled = true;
+      $("report").innerHTML = "";
     }
+  }
+
+  function num(x) { return "<bdi dir=\"ltr\">" + esc(x) + "</bdi>"; }
+  function fill(str, vals) { return str.replace(/\{(\w+)\}/g, function (_, k) { return num(vals[k]); }); }
+  function th(keys) { return "<tr>" + keys.map(function (k) { return "<th>" + t(k) + "</th>"; }).join("") + "</tr>"; }
+
+  function buildReport() {
+    var c = calc(), r = c.r, set = c.set, now = new Date();
+    var iso = now.toISOString().slice(0, 10);
+    var dateStr = now.toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
+    var proj = $("proj").value.trim();
+    var total = r.gb_per_day || 1;
+    var rows = r.groups.map(function (g, i) {
+      var ui = groups[i], measured = ui.measured !== "" && Number(ui.measured) > 0;
+      return "<tr><td>" + (i + 1) + "</td><td>" + num(g.count) + "</td><td>" + (measured ? num(ui.measured + " kbps") + " (" + t("measuredNote") + ")" : num(String(ui.resolution).toUpperCase())) +
+        "</td><td>" + (measured ? "—" : num(ui.codec === "h265plus" ? "H.265+" : ui.codec.toUpperCase().replace("H", "H."))) + "</td><td>" + (measured ? "—" : num(ui.fps)) + "</td><td>" + num(ui.hours) + "</td><td>" + num(ui.activity + "%") +
+        "</td><td>" + (ui.audio ? t("yes") : t("no")) + "</td><td>" + num(g.kbps) + "</td><td>" + num(g.gb_per_camera_day) + "</td><td>" + num(g.gb_per_day) + "</td><td>" + num((g.gb_per_day / total * 100).toFixed(1) + "%") + "</td></tr>";
+    }).join("");
+    rows += '<tr><th colspan="8">' + t("total") + "</th><th></th><th></th><th>" + num(r.gb_per_day) + "</th><th>" + num("100%") + "</th></tr>";
+    var raidName = $("raid").options[$("raid").selectedIndex].text;
+    var kv = function (pairs) { return "<table>" + pairs.map(function (p) { return "<tr><th style=\"width:55%\">" + t(p[0]) + "</th><td>" + p[1] + "</td></tr>"; }).join("") + "</table>"; };
+    var holds = r.retention_days_achieved === null ? "∞" : r.retention_days_achieved;
+    var vals = { perDay: r.gb_per_day, days: set.days, reserve: set.reserve, need: r.required_usable_tb, raid: raidName, disks: r.disks, disk: set.disk, raw: r.raw_tb, usable: r.usable_tb_after_raid, holds: holds };
+    $("report").innerHTML =
+      "<h1>" + t("rTitle") + "</h1>" +
+      '<p class="meta">' + t("rDate") + ": " + esc(dateStr) + (proj ? " &nbsp;|&nbsp; " + t("rProject") + ": " + esc(proj) : "") + "</p>" +
+      "<h2>" + t("rCams") + "</h2><table>" + th(["cGroup", "cCount", "cRes", "cCodec", "cFps", "cHours", "cAct", "cAudio", "cKbps", "cGbCam", "cGbGrp", "cShare"]) + rows + "</table>" +
+      "<h2>" + t("rSet") + "</h2>" + kv([["sRet", num(set.days) + " " + t("days")], ["sDisk", num(set.disk + " TB")], ["sRaid", esc(raidName)], ["sReserve", num(set.reserve + "%")]]) +
+      "<h2>" + t("rRes") + "</h2>" + kv([["oDisks", "<b>" + num(r.disks + " × " + set.disk + " TB") + "</b>"], ["oRaw", num(r.raw_tb + " TB")], ["oUsable", num(r.usable_tb_after_raid + " TB")],
+        ["oHolds", num(holds) + " " + t("days")], ["oPerDay", num(r.gb_per_day + " GB")], ["oNeed", num(r.required_usable_tb + " TB")], ["oNet", num(r.total_bitrate_mbps + " Mbps")], ["oNetH", num(r.network_mbps_with_headroom + " Mbps")]]) +
+      "<h2>" + t("rCalc") + "</h2><ol><li>" + t("k1") + "</li><li>" + fill(t("k2"), vals) + "</li><li>" + fill(t("k3"), vals) + "</li><li>" + fill(t("k4"), vals) + "</li><li>" + fill(t("k5"), vals) + "</li></ol>" +
+      '<p class="disclaimer">' + t("disclaimer") + "</p>";
+    return iso;
+  }
+
+  function exportPdf() {
+    var iso;
+    try { iso = buildReport(); } catch (e) { return; }
+    var prev = document.title;
+    document.title = "CCTV-storage-report-" + iso;
+    var restore = function () { document.title = prev; window.removeEventListener("afterprint", restore); };
+    window.addEventListener("afterprint", restore);
+    window.print();
   }
 
   function applyLang() {
@@ -137,6 +234,7 @@
     $("t-cams").textContent = L.cams; $("t-set").textContent = L.set; $("add").textContent = L.add;
     $("l-days").textContent = L.days; $("l-disk").textContent = L.disk; $("l-raid").textContent = L.raid; $("l-res").textContent = L.reserve;
     $("t-foot").textContent = L.foot; document.title = L.title;
+    $("pdf").textContent = L.pdf; $("t-pdfhint").textContent = L.pdfhint; $("l-proj").textContent = L.proj;
     renderGroups(); compute();
   }
 
@@ -154,6 +252,7 @@
     renderGroups(); compute();
   });
   $("add").addEventListener("click", function () { groups.push(mk(4, "2mp", false)); renderGroups(); compute(); });
+  $("pdf").addEventListener("click", exportPdf);
   ["days", "disk", "raid", "reserve"].forEach(function (id) { $(id).addEventListener("input", compute); });
   $("lang").addEventListener("click", function () { lang = lang === "en" ? "ar" : "en"; applyLang(); });
   applyLang();
