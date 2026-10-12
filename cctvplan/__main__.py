@@ -9,7 +9,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(
         prog="cctvplan",
         description="Estimate CCTV storage, disks and network load.",
-        epilog="Camera spec: COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]] e.g. 16x4mp:h265:15 or 4x3000k (measured bitrate).",
+        epilog="Camera spec: COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]][:audio] e.g. 16x4mp:h265:15, 8x2mp:h265:15:audio, or 4x3000k (measured bitrate). Repeat --camera for each type.",
     )
     p.add_argument("--camera", action="append", required=True, metavar="SPEC", help="repeat for each camera group")
     p.add_argument("--days", type=float, required=True, help="retention in days")
@@ -31,7 +31,8 @@ def main(argv=None) -> int:
     print(f"Cameras: {res['cameras']}   Stream total: {res['total_bitrate_mbps']} Mbps "
           f"(plan the network for ~{res['network_mbps_with_headroom']} Mbps)")
     for g in res["groups"]:
-        print(f"  {g['count']} x {g['resolution']}: {g['kbps']} kbps each, {g['gb_per_camera_day']} GB/day each")
+        tag = " +audio" if g.get("audio") else ""
+        print(f"  {g['count']} x {g['resolution']}{tag}: {g['kbps']} kbps each, {g['gb_per_camera_day']} GB/day each, {g['gb_per_day']} GB/day total")
     print(f"Writes per day: {res['gb_per_day']} GB")
     print(f"Need {res['required_usable_tb']} TB usable for {a.days:g} days (incl. {a.reserve:.0%} reserve)")
     print(f"=> {res['disks']} x {a.disk_tb:g} TB disks in {res['raid'].upper()}: {res['raw_tb']} TB raw, "

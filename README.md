@@ -25,7 +25,7 @@ Need 14.86 TB usable for 30 days (incl. 10% reserve)
 => 3 x 8 TB disks in RAID5: 24.0 TB raw, 16.0 TB after RAID, holds 32 days
 ```
 
-Camera spec: `COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]]`
+Camera spec: `COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]][:audio]`. Repeat `--camera` for every type you have; each group has its own count, resolution, codec, fps, hours and audio setting.
 
 | Part | Values |
 |---|---|
@@ -33,6 +33,15 @@ Camera spec: `COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]]`
 | `CODEC` | `h264`, `h265` (half the bitrate), `h265plus` (35%) |
 | `HOURS` | recording hours per day (default 24) |
 | `ACTIVITY` | share of those hours with footage, e.g. `0.3` for motion-only (default 1) |
+| `audio` | optional flag: adds 64 kbps per camera in that group |
+
+Mixed fleet (10 plain 2MP, 6 two-megapixel with audio, 8 four-megapixel with audio):
+
+```bash
+python -m cctvplan --camera 10x2mp:h265:15 --camera 6x2mp:h265:15:audio --camera 8x4mp:h265:15:audio --days 30
+```
+
+The web calculator does the same with *Add camera group*, *Duplicate* and a *With audio* checkbox per group.
 
 Other options: `--raid none|raid0|raid1|raid5|raid6|raid10`, `--disks N` (report retention for a fixed disk count), `--reserve 0.10`, `--json`.
 

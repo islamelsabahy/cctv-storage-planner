@@ -101,6 +101,9 @@ class SpecAndCliTests(unittest.TestCase):
                          {"count": 16, "resolution": "4mp", "codec": "h265", "fps": 15.0})
         self.assertEqual(parse_camera_spec("4x3000k")["resolution"], "3000k")
         self.assertEqual(parse_camera_spec("2x2mp:h264:25:12:0.5")["activity"], 0.5)
+        self.assertTrue(parse_camera_spec("8x2mp:h265:15:audio")["audio"])
+        self.assertEqual(parse_camera_spec("8x2mp:h265:15:12:0.5:AUDIO")["hours"], 12.0)
+        self.assertNotIn("audio", parse_camera_spec("8x2mp:h265:15"))
 
     def test_bad_spec(self):
         for bad in ("16", "x4mp", "a x b", "1x2mp:h264:25:24:1:9"):
@@ -116,6 +119,30 @@ class SpecAndCliTests(unittest.TestCase):
         bad = subprocess.run([sys.executable, "-m", "cctvplan", "--camera", "zzz", "--days", "30"],
                              cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(bad.returncode, 2)
+
+
+class MixedFleetTests(unittest.TestCase):
+    def test_audio_group_costs_exactly_64_kbps_per_camera_more(self):
+        res = plan([{"count": 10, "resolution": "2mp", "codec": "h265", "fps": 15},
+                    {"count": 6, "resolution": "2mp", "codec": "h265", "fps": 15, "audio": True}], 30, 8, "raid5")
+        plain, with_audio = res["groups"]
+        self.assertFalse(plain["audio"])
+        self.assertTrue(with_audio["audio"])
+        self.assertAlmostEqual(with_audio["kbps"] - plain["kbps"], 64, places=1)
+
+    def test_totals_equal_sum_of_groups(self):
+        res = plan([{"count": 10, "resolution": "2mp"}, {"count": 6, "resolution": "4mp", "audio": True},
+                    {"count": 2, "resolution": "8mp"}], 30, 8, "raid5")
+        self.assertEqual(res["cameras"], 18)
+        self.assertAlmostEqual(res["gb_per_day"], sum(g["gb_per_day"] for g in res["groups"]), delta=0.02)
+
+    def test_cli_mixed_groups_with_audio(self):
+        env = dict(os.environ, PYTHONPATH=ROOT)
+        out = subprocess.run([sys.executable, "-m", "cctvplan", "--camera", "10x2mp:h265:15", "--camera", "6x2mp:h265:15:audio",
+                              "--camera", "8x4mp:h265:15", "--days", "30"], cwd=ROOT, env=env, capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertIn("+audio", out.stdout)
+        self.assertIn("Cameras: 24", out.stdout)
 
 
 class SharedVectorTests(unittest.TestCase):

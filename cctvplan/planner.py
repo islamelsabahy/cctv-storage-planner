@@ -73,19 +73,26 @@ def daily_gb(kbps: float, hours: float = 24, activity: float = 1.0) -> float:
 
 
 def parse_camera_spec(spec: str) -> dict:
-    """Parse ``COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]]``, e.g. ``16x4mp:h265:15:24:0.4``."""
+    """Parse ``COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]]`` with an optional ``audio`` flag.
+
+    Examples: ``16x4mp:h265:15``, ``8x2mp:h265:15:audio``, ``2x2mp:h264:25:12:0.5:audio``.
+    """
     try:
         head, *rest = spec.split(":")
+        audio = any(tok.strip().lower() == "audio" for tok in rest)
+        rest = [tok for tok in rest if tok.strip().lower() != "audio"]
         count_s, res = head.lower().split("x", 1)
         group = {"count": int(count_s), "resolution": res}
         keys = ("codec", "fps", "hours", "activity")
-        for key, val in zip(keys, rest):
-            group[key] = val if key == "codec" else float(val)
         if len(rest) > len(keys):
             raise ValueError
+        for key, val in zip(keys, rest):
+            group[key] = val if key == "codec" else float(val)
+        if audio:
+            group["audio"] = True
         return group
     except (ValueError, TypeError):
-        raise ValueError(f"bad camera spec {spec!r}; expected COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]]") from None
+        raise ValueError(f"bad camera spec {spec!r}; expected COUNTxRES:CODEC:FPS[:HOURS[:ACTIVITY]][:audio]") from None
 
 
 def plan(groups: List[dict], retention_days: float, disk_tb: float, raid: str = "raid5",
@@ -115,7 +122,7 @@ def plan(groups: List[dict], retention_days: float, disk_tb: float, raid: str = 
         cameras += count
         total_kbps += count * kbps
         per_day += count * gb
-        detail.append({"count": count, "resolution": str(g["resolution"]), "kbps": round(kbps, 1),
+        detail.append({"count": count, "resolution": str(g["resolution"]), "audio": bool(g.get("audio", False)), "kbps": round(kbps, 1),
                        "gb_per_camera_day": round(gb, 2), "gb_per_day": round(count * gb, 2)})
 
     needed_gb = per_day * retention_days

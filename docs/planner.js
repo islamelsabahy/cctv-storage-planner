@@ -53,7 +53,7 @@
       var kbps = cameraBitrateKbps(g.resolution, g.codec, g.fps, g.audio);
       var gb = dailyGb(kbps, g.hours, g.activity);
       cameras += count; totalKbps += count * kbps; perDay += count * gb;
-      detail.push({ count: count, resolution: String(g.resolution), kbps: round(kbps, 1),
+      detail.push({ count: count, resolution: String(g.resolution), audio: !!g.audio, kbps: round(kbps, 1),
         gb_per_camera_day: round(gb, 2), gb_per_day: round(count * gb, 2) });
     });
     var neededGb = perDay * retentionDays, grossTb = neededGb / (1 - reserve) / 1000;

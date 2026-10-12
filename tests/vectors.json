@@ -18,6 +18,7 @@
     {
      "count": 1,
      "resolution": "2mp",
+     "audio": false,
      "kbps": 4096.0,
      "gb_per_camera_day": 44.24,
      "gb_per_day": 44.24
@@ -61,6 +62,7 @@
     {
      "count": 16,
      "resolution": "4mp",
+     "audio": false,
      "kbps": 1843.2,
      "gb_per_camera_day": 19.91,
      "gb_per_day": 318.5
@@ -68,6 +70,7 @@
     {
      "count": 4,
      "resolution": "8mp",
+     "audio": false,
      "kbps": 2949.1,
      "gb_per_camera_day": 31.85,
      "gb_per_day": 127.4
@@ -106,6 +109,7 @@
     {
      "count": 8,
      "resolution": "5mp",
+     "audio": true,
      "kbps": 2357.8,
      "gb_per_camera_day": 25.46,
      "gb_per_day": 203.71
@@ -142,6 +146,7 @@
     {
      "count": 10,
      "resolution": "2mp",
+     "audio": false,
      "kbps": 4096.0,
      "gb_per_camera_day": 44.24,
      "gb_per_day": 442.37
@@ -177,6 +182,7 @@
     {
      "count": 2,
      "resolution": "1mp",
+     "audio": false,
      "kbps": 2048.0,
      "gb_per_camera_day": 22.12,
      "gb_per_day": 44.24
@@ -215,6 +221,7 @@
     {
      "count": 20,
      "resolution": "4mp",
+     "audio": false,
      "kbps": 3072.0,
      "gb_per_camera_day": 9.95,
      "gb_per_day": 199.07
@@ -251,6 +258,7 @@
     {
      "count": 6,
      "resolution": "3000k",
+     "audio": false,
      "kbps": 3000.0,
      "gb_per_camera_day": 16.2,
      "gb_per_day": 97.2
@@ -289,6 +297,7 @@
     {
      "count": 12,
      "resolution": "2mp",
+     "audio": false,
      "kbps": 1228.8,
      "gb_per_camera_day": 13.27,
      "gb_per_day": 159.25
@@ -326,6 +335,7 @@
     {
      "count": 5,
      "resolution": "2mp",
+     "audio": false,
      "kbps": 2048.0,
      "gb_per_camera_day": 22.12,
      "gb_per_day": 110.59
@@ -362,6 +372,7 @@
     {
      "count": 3,
      "resolution": "2mp",
+     "audio": false,
      "kbps": 4096.0,
      "gb_per_camera_day": 0.0,
      "gb_per_day": 0.0
@@ -376,6 +387,88 @@
    "raw_tb": 12,
    "usable_tb_after_raid": 8.0,
    "retention_days_achieved": null
+  }
+ },
+ {
+  "input": {
+   "name": "mixed fleet: 2MP, 2MP with audio, 4MP, 8MP",
+   "groups": [
+    {
+     "count": 10,
+     "resolution": "2mp",
+     "codec": "h265",
+     "fps": 15
+    },
+    {
+     "count": 6,
+     "resolution": "2mp",
+     "codec": "h265",
+     "fps": 15,
+     "audio": true
+    },
+    {
+     "count": 8,
+     "resolution": "4mp",
+     "codec": "h265",
+     "fps": 15,
+     "audio": true
+    },
+    {
+     "count": 2,
+     "resolution": "8mp",
+     "codec": "h265",
+     "fps": 12
+    }
+   ],
+   "days": 30,
+   "disk_tb": 8,
+   "raid": "raid5"
+  },
+  "expected": {
+   "cameras": 26,
+   "groups": [
+    {
+     "count": 10,
+     "resolution": "2mp",
+     "audio": false,
+     "kbps": 1228.8,
+     "gb_per_camera_day": 13.27,
+     "gb_per_day": 132.71
+    },
+    {
+     "count": 6,
+     "resolution": "2mp",
+     "audio": true,
+     "kbps": 1292.8,
+     "gb_per_camera_day": 13.96,
+     "gb_per_day": 83.77
+    },
+    {
+     "count": 8,
+     "resolution": "4mp",
+     "audio": true,
+     "kbps": 1907.2,
+     "gb_per_camera_day": 20.6,
+     "gb_per_day": 164.78
+    },
+    {
+     "count": 2,
+     "resolution": "8mp",
+     "audio": false,
+     "kbps": 2949.1,
+     "gb_per_camera_day": 31.85,
+     "gb_per_day": 63.7
+    }
+   ],
+   "total_bitrate_mbps": 41.2,
+   "network_mbps_with_headroom": 51.5,
+   "gb_per_day": 444.97,
+   "required_usable_tb": 14.83,
+   "disks": 3,
+   "raid": "raid5",
+   "raw_tb": 24,
+   "usable_tb_after_raid": 16.0,
+   "retention_days_achieved": 32
   }
  }
 ]
